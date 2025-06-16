@@ -12,16 +12,22 @@ interface CoffeeShop {
 
 export default function Home() {
   const [coffeeShops, setCoffeeShops] = useState<CoffeeShop[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [isLocationRequested, setIsLocationRequested] = useState(false);
 
-  useEffect(() => {
+  const requestLocation = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
-      setLoading(false);
       return;
     }
+    setIsLocationRequested(true);
+    setLoading(true);
+  };
+
+  useEffect(() => {
+    if (!isLocationRequested) return;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -31,9 +37,10 @@ export default function Home() {
       () => {
         setError('Unable to retrieve your location');
         setLoading(false);
+        setIsLocationRequested(false);
       }
     );
-  }, []);
+  }, [isLocationRequested]);
 
   useEffect(() => {
     if (!location) return;
@@ -92,9 +99,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-violet-800 flex flex-col items-center justify-center p-4">
       <h1 className="text-4xl font-bold mb-6">Coffee Shop Finder</h1>
+      {!isLocationRequested && (
+        <button
+          onClick={requestLocation}
+          className="bg-yellow-950 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4"
+        >
+          Get My Location
+        </button>
+      )}
       {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-      {!loading && !error && coffeeShops.length === 0 && <p>No coffee shops found nearby.</p>}
+      {error && <p className="text-violet">Error: {error}</p>}
+      {!loading && !error && coffeeShops.length === 0 && location && <p>No coffee shops found nearby.</p>}
       {coffeeShops.length > 0 && (
         <ul className="space-y-4 w-full max-w-md">
           {coffeeShops.map((shop) => (
